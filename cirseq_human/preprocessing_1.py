@@ -1,48 +1,49 @@
-import sys,gzip
+import sys,gzip,pysam
+from pysam import qualities_to_qualitystring as decode
 
 workdir = sys.argv[1]
 
-infile   = gzip.open(workdir + "/2_alignment.sam.gz","rb")
-outfile1 = gzip.open(workdir + "/3_alignment.sam.gz","wb") #perfectly matched, ungapped alignemnts
+infile = pysam.AlignmentFile(workdir + "/2_alignment.bam","rb")
+outfile1 = pysam.AlignmentFile(workdir + "/3_alignment.bam","wb",template=infile)
 outfile2 = gzip.open(workdir + "/4_rearranged.fastq.gz","wb") #clipped reads with order of sequence blocks swapped
 outfile3 = gzip.open(workdir + "/5_rotated.fastq.gz","wb") # every possible rotation of gapped and multi-clipped reads
 
-def Rotate(line):
+def Rotate(read):
 	i = 0
-	while i < len(line[9]):
-		outfile3.write("@" + line[0] + "\n")
-		outfile3.write(line[9][-i:] + line[9][:-i] + "\n")
+	while i < read.query_length:
+		outfile3.write("@" + read.query_name + "\n")
+		outfile3.write(read.query_sequence[-i:] + read.query_sequence[:-i] + "\n")
 		outfile3.write("+" + "\n")
-		outfile3.write(line[10][-i:] + line[10][:-i] + "\n")
+		outfile3.write(decode(read.query_qualities[-i:]) + decode(read.query_qualities[:-i]) + "\n")
 		i += 1
 
-for line in infile:
-	line1 = line
-	line = line.split()
+for read in infile.fetch(until_eof=True):
 	
 	#make every possible rotation of reads with gaps and more than one clipped sequence
-	if line[5].count("D") > 0 or line[5].count("I") > 0 or line[5].count("S") > 1 or line[5].count("*"): 
-		Rotate(line)
+	cigar=read.cigarstring
+	if read.is_unmapped:
+		Rotate(read)
+	elif cigar.count("D")> 0 or cigar.count("I") > 0 or cigar.count("S") > 1:
+		Rotate(read)
 	
-	elif line[5].count("S") == 0:
-		xm = line[13].split(":") #xm = number of mismatches
+	elif cigar.count("S") == 0:
 		
-		#save perfectly matched, ungapped alignments
-		if int(xm[2]) == 0:
-			outfile1.write(line1)
+		#fetch number of mismatches, save perfectly matched and ungapped alignments
+		if read.get_tag("NM") == 0:
+			outfile1.write(read)
 		
 		#make every possible rotation of reads with no gaps but have mismatches. Coincidentally matched bases near the
 		#ends may suppress sequence clipping
 		else:
-			Rotate(line)
+			Rotate(read)
 	
 	#rearrange sequences with a single block of clipped reads
-	elif line[5].count("S") == 1:
+	elif cigar.count("S") == 1:
 		
 		#parse CIGAR
 		numbers = ""
 		letters = []
-		for character in line[5]:
+		for character in cigar:
 			if character == "M" or character == "S":
 				letters.append(character)
 				numbers += "X"
@@ -51,9 +52,9 @@ for line in infile:
 		numbers = numbers.split("X")
 		
 		#rearrange seuences and quality scores
-		Sequence = line[9][int(numbers[0]):] + line[9][0:int(numbers[0])]
-		QualityScores = line[10][int(numbers[0]):] + line[10][0:int(numbers[0])]
-		outfile2.write("@" + line[0] + "\n")
+		Sequence = read.query_sequence[int(numbers[0]):] + read.query_sequence[0:int(numbers[0])]
+		QualityScores = decode(read.query_qualities[int(numbers[0]):]) + decode(read.query_qualities[0:int(numbers[0])])
+		outfile2.write("@" + read.query_name + "\n")
 		outfile2.write(Sequence + "\n")
 		outfile2.write("+" + "\n")
 		outfile2.write(QualityScores + "\n")
