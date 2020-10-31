@@ -43,7 +43,9 @@ def GetRepLength(Sequence):
     repLength = 0
   else:
     repLength = int(mode(SubstringLengths)[0][0]) + 8
-    if repLength  < 25 or repLength > math.floor(len(Sequence)/3):
+    if repLength  < 25:
+      repLength = -1
+    elif repLength > math.floor(len(Sequence)/3):
       repLength = 1
 
   return repLength
@@ -194,7 +196,8 @@ def Consensus(infile, outfile):
 
   cdef int counter_PoorQuality
   cdef int counter_NoRepeats
-  cdef int counter_AbnormalRepeatLength
+  cdef int counter_ShorterRepeatLength
+  cdef int counter_LongerRepeatLength
   cdef int counter_LowIdentity
   cdef int counter_TotalReads
   cdef int counter_ConsensusSequences
@@ -204,13 +207,16 @@ def Consensus(infile, outfile):
 
   counter_PoorQuality = 0
   counter_NoRepeats = 0
-  counter_AbnormalRepeatLength = 0
+  counter_ShorterRepeatLength = 0
+  counter_LongerRepeatLength = 0
   counter_LowIdentity = 0
   counter_TotalReads = 0
   counter_ConsensusSequences = 0
 
-  RepeatLengths = [0]*115
-	
+  RepeatLengths = [0]*110
+  RepeatCopies = [0]*15
+  Length_Copy_Matrix = [[0]*110 for _ in range(15)]
+
   while True:
 
     # Read FASTQ formatted sequence entry
@@ -236,14 +242,18 @@ def Consensus(infile, outfile):
 			
     else:
       repLength = GetRepLength(Sequence)
-
       if repLength == 0:
         counter_NoRepeats += 1
       elif repLength == 1:
-        counter_AbnormalRepeatLength += 1
+        counter_LongerRepeatLength += 1
+      elif repLength == -1:
+        counter_ShorterRepeatLength += 1
       else:
+        copy = len(Sequence)//repLength
         RepeatLengths[repLength] += 1
         flag, rep1, rep2, rep3, q1, q2, q3 = OptimizeReps(Sequence, QualityScores, repLength)
+        RepeatCopies[copy] += 1
+        Length_Copy_Matrix[copy][repLength] += 1
 
         if flag == 0:
           counter_LowIdentity += 1
@@ -256,6 +266,6 @@ def Consensus(infile, outfile):
           outfile.write(EmptyLine)
           outfile.write(consensusQ + "\n")
 
-  return counter_PoorQuality, counter_NoRepeats, counter_AbnormalRepeatLength, \
+  return counter_PoorQuality, counter_NoRepeats, counter_ShorterRepeatLength, counter_LongerRepeatLength, \
          counter_LowIdentity, counter_ConsensusSequences, counter_TotalReads, \
-         RepeatLengths
+         RepeatLengths, RepeatCopies, Length_Copy_Matrix
