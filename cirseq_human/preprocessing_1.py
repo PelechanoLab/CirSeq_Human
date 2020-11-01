@@ -18,27 +18,25 @@ def Rotate(read):
 		i += 1
 
 for read in infile.fetch(until_eof=True):
-	
+		
 	#make every possible rotation of reads with gaps and more than one clipped sequence
 	cigar=read.cigarstring
 	if read.is_unmapped:
 		Rotate(read)
-	elif cigar.count("D")> 0 or cigar.count("I") > 0 or cigar.count("S") > 1:
+	elif (cigar.count("D")> 0 or cigar.count("I") > 0 or cigar.count("S") > 1) and read.is_secondary == False:
 		Rotate(read)
-	
+
 	elif cigar.count("S") == 0:
-		
 		#fetch number of mismatches, save perfectly matched and ungapped alignments
 		if read.get_tag("NM") == 0:
 			outfile1.write(read)
-		
 		#make every possible rotation of reads with no gaps but have mismatches. Coincidentally matched bases near the
 		#ends may suppress sequence clipping
-		else:
+		elif read.is_secondary == False:
 			Rotate(read)
-	
+		
 	#rearrange sequences with a single block of clipped reads
-	elif cigar.count("S") == 1:
+	elif cigar.count("S") == 1 and read.is_secondary == False:
 		
 		#parse CIGAR
 		numbers = ""

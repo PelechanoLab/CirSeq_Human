@@ -2,10 +2,8 @@ import sys,gzip,pysam
 
 workdir = sys.argv[1]
 
-infiles = ["/9_alignment.bam","/10_alignment.bam"]
-
-infile = pysam.AlignmentFile(workdir + infiles[0],"rb")
-outfile = pysam.AlignmentFile(workdir + "/11_alignment.bam","wb",template=infile)
+infile = pysam.AlignmentFile(workdir + "/9_alignment.bam","rb")
+outfile = pysam.AlignmentFile(workdir + "/10_alignment.bam","wb",template=infile)
 
 def CompareAS(infile,outfile):	
 	#running lists
@@ -47,9 +45,6 @@ def CompareAS(infile,outfile):
 		#write alignment with the best alignment score
 		outfile.write(Alignment[AlignmentScore.index(max(AlignmentScore))])
 
-CompareAS(infile,outfile)
-infile.close()
-infile = pysam.AlignmentFile(workdir + infiles[1],"rb")
 CompareAS(infile,outfile)
 infile.close()
 outfile.close()

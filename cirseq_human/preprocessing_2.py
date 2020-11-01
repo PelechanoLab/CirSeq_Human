@@ -22,7 +22,7 @@ for read in infile.fetch(until_eof=True):
 	cigar=read.cigarstring
 	if read.is_unmapped:
 		Rotate(read)
-	elif cigar.count("D")> 0 or cigar.count("I") > 0 or cigar.count("S") > 1:
+	elif (cigar.count("D")> 0 or cigar.count("I") > 0 or cigar.count("S") > 1) and read.is_secondary == False:
 		Rotate(read)
 	
 	elif cigar.count("S") == 0:
@@ -33,11 +33,11 @@ for read in infile.fetch(until_eof=True):
 		
 		#make every possible rotation of reads with no gaps but have mismatches. Coincidentally matched bases near the
 		#ends may suppress sequence clipping
-		else:
+		elif read.is_secondary == False:
 			Rotate(read)
 	
 	#make every possible rotation of reads that still have clipped bases following rearrangement
-	elif cigar.count("S") == 1:
+	elif cigar.count("S") == 1 and read.is_secondary == False:
 		Rotate(read)
 
 infile.close()

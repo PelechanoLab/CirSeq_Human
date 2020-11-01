@@ -39,13 +39,13 @@ hisat2 -p $THREAD --no-unal -x ${REFDIR_IDX} --known-splicesite-infile ${SPLICES
 # preprocess 2
 python ${SCRIPTDIR}/preprocessing_2.py ${WORKDIR} 
 
-hisat2 -p $THREAD --no-unal -x ${REFDIR_IDX} --known-splicesite-infile ${SPLICESITE} -U ${WORKDIR}/5_rotated.fastq.gz | samtools view -@ $THREAD -b -o ${WORKDIR}/9_alignment.bam
-
-hisat2 -p $THREAD --no-unal -x ${REFDIR_IDX} --known-splicesite-infile ${SPLICESITE} -U ${WORKDIR}/8_rotated.fastq.gz | samtools view -@ $THREAD -b -o ${WORKDIR}/10_alignment.bam
+hisat2 -p $THREAD --no-unal -x ${REFDIR_IDX} --known-splicesite-infile ${SPLICESITE} -U ${WORKDIR}/5_rotated.fastq.gz,${WORKDIR}/8_rotated.fastq.gz | samtools view -@ $THREAD -b -o ${WORKDIR}/9_alignment.bam
 
 # preprocess 3
 python ${SCRIPTDIR}/preprocessing_3.py ${WORKDIR} 
 
-samtools merge -@ $THREAD ${WORKDIR}/consensus_align.bam ${WORKDIR}/3_alignment.bam ${WORKDIR}/7_alignment.bam ${WORKDIR}/11_alignment.bam
-rm -f ${WORKDIR}/3_alignment.bam ${WORKDIR}/7_alignment.bam ${WORKDIR}/11_alignment.bam ${WORKDIR}/2_alignment.bam ${WORKDIR}/4_rearranged.fastq.gz ${WORKDIR}/5_rotated.fastq.gz ${WORKDIR}/6_alignment.bam ${WORKDIR}/8_rotated.fastq.gz ${WORKDIR}/9_alignment.bam ${WORKDIR}/10_alignment.bam
-
+echo "start merging alignment file"
+samtools merge -f -@ $THREAD ${WORKDIR}/consensus_alignment.bam ${WORKDIR}/3_alignment.bam ${WORKDIR}/7_alignment.bam ${WORKDIR}/10_alignment.bam
+samtools sort -@ $THREAD -o ${WORKDIR}/consensus_align_sorted.bam ${WORKDIR}/consensus_alignment.bam
+rm -f ${WORKDIR}/4_rearranged.fastq.gz ${WORKDIR}/*_rotated.fastq.gz ${WORKDIR}/*_alignment.bam
+samtools index -@ $THREAD ${WORKDIR}/consensus_align_sorted.bam
