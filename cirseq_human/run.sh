@@ -50,7 +50,7 @@ hisat2 -p $THREAD --no-unal -x ${REFDIR_IDX} --known-splicesite-infile ${SPLICES
 echo "Extracting the best hit of each perfectly mapped sequence..."
 python ${SCRIPTDIR}/preprocessing_3.py ${WORKDIR} 
 
-echo "Combining alignment files and sorting"
+echo "Combining alignment files and sorting..."
 samtools merge -f -@ $THREAD ${WORKDIR}/consensus_alignment.bam ${WORKDIR}/3_alignment.bam ${WORKDIR}/7_alignment.bam ${WORKDIR}/10_alignment.bam
 samtools sort -@ $THREAD -o ${WORKDIR}/consensus_align_sorted.bam ${WORKDIR}/consensus_alignment.bam
 rm -f ${WORKDIR}/4_rearranged.fastq.gz ${WORKDIR}/*_rotated.fastq.gz ${WORKDIR}/*_alignment.bam

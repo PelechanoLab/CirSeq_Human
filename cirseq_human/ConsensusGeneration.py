@@ -82,7 +82,7 @@ for Copy in RepeatCopies:
         parameterfile3.write(str(i) + "\t" + str(Copy) + "\n")
         i += 1
 	
-parameterfile4.write("Length\tCopy\tNumberOfReads\n")
+parameterfile4.write("Copy\tLength\tNumberOfReads\n")
 i = 0
 for Copy in Length_Copy_Matrix:
 	j = 0
